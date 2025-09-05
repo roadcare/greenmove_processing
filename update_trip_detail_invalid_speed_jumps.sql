@@ -9,8 +9,8 @@
 
 CREATE OR REPLACE FUNCTION public.update_trip_detail_invalid_speed_jumps(
     trip_id uuid,
-    max_acceleration_ms2 numeric DEFAULT 15.0,  -- Max acceleration in m/s² (default: very permissive)
-    max_deceleration_ms2 numeric DEFAULT 15.0,  -- Max deceleration in m/s² (default: very permissive)
+    max_acceleration_ms2 numeric DEFAULT 5.0,  -- Max acceleration in m/s² (default: very permissive)
+    max_deceleration_ms2 numeric DEFAULT 5.0,  -- Max deceleration in m/s² (default: very permissive)
     max_speed_kmh numeric DEFAULT 1500.0        -- Max realistic speed in km/h (covers all vehicles including planes)
 )
     RETURNS TABLE(

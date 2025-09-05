@@ -3,12 +3,11 @@
 -- DROP FUNCTION IF EXISTS public.calculate_weighted_avg_speed(uuid, boolean, numeric, numeric, numeric);
 
 CREATE OR REPLACE FUNCTION public.calculate_weighted_avg_speed(
-    trip_id uuid,
-    isfiltervalide boolean DEFAULT false,
-    max_acceleration_ms2 numeric DEFAULT 15.0,  -- Max acceleration in m/s² (default: very permissive)
-    max_deceleration_ms2 numeric DEFAULT 15.0,  -- Max deceleration in m/s² (default: very permissive)
-    max_speed_kmh numeric DEFAULT 1500.0       -- Max realistic speed in km/h (covers all vehicles including planes)
-)
+	trip_id uuid,
+	isfiltervalide boolean DEFAULT true,
+	max_acceleration_ms2 numeric DEFAULT 5.0,
+	max_deceleration_ms2 numeric DEFAULT 5.0,
+	max_speed_kmh numeric DEFAULT 1500.0)
     RETURNS numeric
     LANGUAGE 'plpgsql'
     COST 100
@@ -181,23 +180,3 @@ $BODY$;
 
 ALTER FUNCTION public.calculate_weighted_avg_speed(uuid, boolean, numeric, numeric, numeric)
     OWNER TO psqladminun;
-
--- Example usage:
--- Default filtering (15 m/s² acceleration, 15 m/s² deceleration, 1500 km/h max speed - covers all vehicle types)
--- SELECT calculate_weighted_avg_speed('trip-uuid-here', true);
-
--- Custom filtering for different vehicle types:
--- Walking/Running (lower thresholds)
--- SELECT calculate_weighted_avg_speed('trip-uuid-here', true, 2.0, 2.0, 15.0);
-
--- Bicycle
--- SELECT calculate_weighted_avg_speed('trip-uuid-here', true, 3.0, 4.0, 50.0);
-
--- Car
--- SELECT calculate_weighted_avg_speed('trip-uuid-here', true, 5.0, 8.0, 200.0);
-
--- Train (can have higher speeds but gentler acceleration)
--- SELECT calculate_weighted_avg_speed('trip-uuid-here', true, 2.0, 3.0, 300.0);
-
--- Plane (high speeds with moderate acceleration)
--- SELECT calculate_weighted_avg_speed('trip-uuid-here', true, 3.0, 2.0, 900.0);
