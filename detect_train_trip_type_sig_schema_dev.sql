@@ -14,147 +14,150 @@ AS $BODY$
 DECLARE
     total_distance REAL;
     avg_speed REAL;
-    train_length REAL := 0;
-    total_train_length REAL := 0;
     start_point_distance REAL;
     end_point_distance REAL;
+    train_length REAL := 0;
     intersecting_nature TEXT;
     start_end_nature TEXT;
     sql_query TEXT;
+    trip_bbox GEOMETRY;
 BEGIN
-    -- Get the total distance and average speed of the trip using dynamic schema
+    -- Early validation - get trip metadata first
     sql_query := format('SELECT "totalDistance", "avgSpeed" FROM %I.trip WHERE id = $1', schema_name);
     EXECUTE sql_query INTO total_distance, avg_speed USING trip_id;
     
-    -- If trip not found, return NOT_TRAIN
+    -- Early exit conditions
     IF total_distance IS NULL OR avg_speed IS NULL THEN
         RETURN 'NOT_TRAIN';
     END IF;
     
-    -- Calculate train_length, total_train_length, distances from start/end points to train buffer, and get intersecting natures
+    IF total_distance <= min_train_distance OR avg_speed <= min_train_speed THEN
+        RETURN 'NOT_TRAIN';
+    END IF;
+    
+    -- OPTIMIZATION: Check start/end point distances first for early exit
+    sql_query := format('
+        WITH trip_endpoints AS (
+            SELECT 
+                ST_Transform(ST_SetSRID(ST_MakePoint(
+                    (SELECT long FROM %I."tripDetail" WHERE "tripId" = $1 AND "isValid" = true ORDER BY timestamp LIMIT 1),
+                    (SELECT lat FROM %I."tripDetail" WHERE "tripId" = $1 AND "isValid" = true ORDER BY timestamp LIMIT 1)
+                ), 4326), 2154) as start_geom,
+                ST_Transform(ST_SetSRID(ST_MakePoint(
+                    (SELECT long FROM %I."tripDetail" WHERE "tripId" = $1 AND "isValid" = true ORDER BY timestamp DESC LIMIT 1),
+                    (SELECT lat FROM %I."tripDetail" WHERE "tripId" = $1 AND "isValid" = true ORDER BY timestamp DESC LIMIT 1)
+                ), 4326), 2154) as end_geom
+        )
+        SELECT 
+            (SELECT MIN(ST_Distance(start_geom, tb.geom)) FROM bdtopo.trains_buffer tb) as start_distance,
+            (SELECT MIN(ST_Distance(end_geom, tb.geom)) FROM bdtopo.trains_buffer tb) as end_distance
+        FROM trip_endpoints
+    ', schema_name, schema_name, schema_name, schema_name);
+    
+    EXECUTE sql_query INTO start_point_distance, end_point_distance USING trip_id;
+    
+    -- Early exit: if both start and end points are far from train infrastructure
+    IF start_point_distance > distance_to_train AND end_point_distance > distance_to_train THEN
+        RAISE NOTICE 'Early exit: Start distance: % m, End distance: % m, Threshold: % m', 
+            start_point_distance, end_point_distance, distance_to_train;
+        RETURN 'NOT_TRAIN';
+    END IF;
+    
+    -- Continue with full analysis only if start/end check passed
+    -- Get trip bounding box for spatial filtering
+    sql_query := format('
+        SELECT ST_Envelope(ST_Collect(ST_Transform(ST_SetSRID(ST_MakePoint(long, lat), 4326), 2154)))
+        FROM %I."tripDetail" 
+        WHERE "tripId" = $1 AND "isValid" = true
+    ', schema_name);
+    EXECUTE sql_query INTO trip_bbox USING trip_id;
+    
+    IF trip_bbox IS NULL THEN
+        RETURN 'NOT_TRAIN';
+    END IF;
+    
+    -- Optimized main query with spatial pre-filtering
     sql_query := format('
         WITH trip_points AS (
             SELECT 
                 td.timestamp,
-                td.long,
-                td.lat,
                 ST_Transform(ST_SetSRID(ST_MakePoint(td.long, td.lat), 4326), 2154) as geom,
-                -- Check if point is within any train buffer and get the nature
-                (
-                    SELECT tb.nature 
-                    FROM bdtopo.trains_buffer tb 
-                    WHERE ST_Within(
-                        ST_Transform(ST_SetSRID(ST_MakePoint(td.long, td.lat), 4326), 2154), 
-                        tb.geom
-                    )
-                    LIMIT 1
-                ) as train_nature,
-                -- Check if point is within any train buffer
-                EXISTS (
-                    SELECT 1 
-                    FROM bdtopo.trains_buffer tb 
-                    WHERE ST_Within(
-                        ST_Transform(ST_SetSRID(ST_MakePoint(td.long, td.lat), 4326), 2154), 
-                        tb.geom
-                    )
-                ) as is_in_train,
                 ROW_NUMBER() OVER (ORDER BY td.timestamp) as rn
             FROM %I."tripDetail" td
-            WHERE td."tripId" = $1             
+            WHERE td."tripId" = $1 AND td."isValid" = true
             ORDER BY td.timestamp
         ),
-        consecutive_in_train_segments AS (
+        -- Pre-filter train buffers using bounding box (major performance gain)
+        relevant_trains AS (
+            SELECT id, nature, geom
+            FROM bdtopo.trains_buffer tb
+            WHERE ST_Intersects(tb.geom, $2)
+        ),
+        point_train_intersections AS (
+            SELECT 
+                tp.rn,
+                tp.geom,
+                rt.nature,
+                CASE WHEN ST_Within(tp.geom, rt.geom) THEN 1 ELSE 0 END as is_in_train
+            FROM trip_points tp
+            LEFT JOIN relevant_trains rt ON ST_Within(tp.geom, rt.geom)
+        ),
+        consecutive_segments AS (
             SELECT 
                 p1.geom as geom1,
                 p2.geom as geom2,
-                COALESCE(p1.train_nature, p2.train_nature) as segment_nature
-            FROM trip_points p1
-            JOIN trip_points p2 ON p2.rn = p1.rn + 1
-            WHERE p1.is_in_train = true AND p2.is_in_train = true
+                p1.nature as segment_nature,
+                ST_Distance(p1.geom, p2.geom) / 1000.0 as segment_distance
+            FROM point_train_intersections p1
+            JOIN point_train_intersections p2 ON p2.rn = p1.rn + 1
+            WHERE p1.is_in_train = 1 AND p2.is_in_train = 1
         ),
-        trip_intrain_points AS (
-            SELECT 
-                geom,
-                train_nature,
-                ROW_NUMBER() OVER (ORDER BY timestamp) as train_rn
-            FROM trip_points
-            WHERE is_in_train = true
-        ),
-        all_train_segments AS (
-            SELECT 
-                p1.geom as geom1,
-                p2.geom as geom2,
-                COALESCE(p1.train_nature, p2.train_nature) as segment_nature
-            FROM trip_intrain_points p1
-            JOIN trip_intrain_points p2 ON p2.train_rn = p1.train_rn + 1
-        ),
-        start_end_points AS (
+        start_end_analysis AS (
             SELECT 
                 (SELECT geom FROM trip_points WHERE rn = 1) as start_geom,
                 (SELECT geom FROM trip_points WHERE rn = (SELECT MAX(rn) FROM trip_points)) as end_geom
-        ),
-        most_common_intersecting_nature AS (
-            SELECT 
-                segment_nature,
-                COUNT(*) as frequency
-            FROM consecutive_in_train_segments
-            WHERE segment_nature IS NOT NULL
-            GROUP BY segment_nature
-            ORDER BY frequency DESC, segment_nature
-            LIMIT 1
-        ),
-        nearest_start_end_nature AS (
-            SELECT 
-                tb.nature,
-                MIN(LEAST(
-                    ST_Distance(sep.start_geom, tb.geom),
-                    ST_Distance(sep.end_geom, tb.geom)
-                )) as min_distance
-            FROM bdtopo.trains_buffer tb, start_end_points sep
-            GROUP BY tb.nature
-            ORDER BY min_distance
-            LIMIT 1
         )
         SELECT 
-            COALESCE(SUM(ST_Distance(geom1, geom2) / 1000.0), 0) as consecutive_train_length,
-            (SELECT COALESCE(SUM(ST_Distance(geom1, geom2) / 1000.0), 0) FROM all_train_segments) as total_train_length,
-            (SELECT COALESCE(MIN(ST_Distance(start_geom, tb.geom)), 999999) FROM bdtopo.trains_buffer tb, start_end_points) as start_distance,
-            (SELECT COALESCE(MIN(ST_Distance(end_geom, tb.geom)), 999999) FROM bdtopo.trains_buffer tb, start_end_points) as end_distance,
-            (SELECT segment_nature FROM most_common_intersecting_nature) as intersecting_nature,
-            (SELECT nature FROM nearest_start_end_nature WHERE min_distance < %s) as start_end_nature
-        FROM consecutive_in_train_segments
-    ', schema_name, distance_to_train);
+            COALESCE(SUM(cs.segment_distance), 0) as consecutive_train_length,
+            -- Most frequent nature among consecutive segments
+            (
+                SELECT segment_nature 
+                FROM consecutive_segments 
+                WHERE segment_nature IS NOT NULL
+                GROUP BY segment_nature 
+                ORDER BY SUM(segment_distance) DESC, segment_nature 
+                LIMIT 1
+            ) as most_common_nature,
+            -- Closest nature to start/end points (only if within threshold)
+            (
+                SELECT rt.nature
+                FROM relevant_trains rt, start_end_analysis sea
+                WHERE LEAST(
+                    ST_Distance(sea.start_geom, rt.geom),
+                    ST_Distance(sea.end_geom, rt.geom)
+                ) < $3
+                ORDER BY LEAST(
+                    ST_Distance(sea.start_geom, rt.geom),
+                    ST_Distance(sea.end_geom, rt.geom)
+                )
+                LIMIT 1
+            ) as closest_nature
+        FROM consecutive_segments cs
+    ', schema_name);
     
-    EXECUTE sql_query INTO train_length, total_train_length, start_point_distance, end_point_distance, intersecting_nature, start_end_nature USING trip_id;
+    EXECUTE sql_query INTO train_length, intersecting_nature, start_end_nature 
+    USING trip_id, trip_bbox, distance_to_train;
     
-    -- Log the calculated values
-    RAISE NOTICE 'Schema: %, Trip ID: %, Total Distance: % km, Avg Speed: % km/h, Train Length (consecutive): % km, Total Train Length (all): % km, Start Point Distance to Train: % m, End Point Distance to Train: % m, Intersecting Nature: %, Start/End Nature: %, Min Train Ratio: %, Min Metro Length Ratio: %, Min Train Distance: % km, Min Train Speed: % km/h, Distance to Train: % m', 
-        schema_name, trip_id, total_distance, avg_speed, train_length, total_train_length, start_point_distance, end_point_distance, intersecting_nature, start_end_nature, min_train_ratio, min_metro_length_ratio, min_train_distance, min_train_speed, distance_to_train;
+    -- Log the calculated values (including early distance check results)
+    RAISE NOTICE 'Schema: %, Trip ID: %, Total Distance: % km, Avg Speed: % km/h, Train Length (consecutive): % km, Start Point Distance: % m, End Point Distance: % m, Intersecting Nature: %, Start/End Nature: %, Distance to Train Threshold: % m', 
+        schema_name, trip_id, total_distance, avg_speed, train_length, start_point_distance, end_point_distance, intersecting_nature, start_end_nature, distance_to_train;
     
-    -- Apply logic based on consecutive train_length ratio
+    -- Simplified decision logic
     IF train_length > (min_train_ratio * total_distance) THEN
-        -- High train coverage: check minimum distance and average speed, return intersecting nature
-        IF (total_distance > min_train_distance) AND (avg_speed > min_train_speed) AND intersecting_nature IS NOT NULL THEN
-            RETURN intersecting_nature;
-        ELSE
-            RETURN 'NOT_TRAIN';
-        END IF;
-               
-    ELSIF train_length < (min_train_ratio * total_distance) AND train_length > (min_metro_length_ratio * total_distance) THEN
-        -- Medium train coverage: check start/end points proximity to train buffer AND average speed
-        IF (start_point_distance < distance_to_train AND end_point_distance < distance_to_train AND avg_speed > min_train_speed AND total_distance > min_train_distance) THEN
-            -- Return the nature of the train buffer closest to start/end points
-            IF start_end_nature IS NOT NULL THEN
-                RETURN start_end_nature;
-            ELSE
-                RETURN 'NOT_TRAIN';
-            END IF;
-        ELSE
-            RETURN 'NOT_TRAIN';
-        END IF;
-        
+        RETURN COALESCE(intersecting_nature, 'NOT_TRAIN');
+    ELSIF train_length > (min_metro_length_ratio * total_distance) THEN
+        RETURN COALESCE(start_end_nature, 'NOT_TRAIN');
     ELSE
-        -- Low train coverage: return NOT_TRAIN
         RETURN 'NOT_TRAIN';
     END IF;
 END;
