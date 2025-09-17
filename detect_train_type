@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION public.detect_train_type_dev(
+CREATE OR REPLACE FUNCTION public.detect_train_type(
     trip_id uuid,
     schema_name text DEFAULT 'public'::text,
     min_train_distance real DEFAULT 0.5,
