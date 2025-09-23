@@ -30,7 +30,11 @@ BEGIN
     IF total_distance IS NULL OR avg_speed IS NULL THEN
         RETURN 'NOT_TRAIN';
     END IF;
-    
+    -- FIRST CHECK: High-speed detection for TGV (160-400 km/h)
+    IF avg_speed >= 160.0 AND avg_speed <= 400.0 THEN
+        RAISE NOTICE 'High-speed detected: Trip ID: %, Avg Speed: % km/h - Classified as TGV', trip_id, avg_speed;
+        RETURN 'TGV';
+    END IF;
     IF total_distance <= min_train_distance OR avg_speed <= min_train_speed THEN
         RETURN 'NOT_TRAIN';
     END IF;
