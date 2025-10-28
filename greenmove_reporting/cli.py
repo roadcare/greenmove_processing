@@ -15,14 +15,26 @@ def main():
         epilog="""
 Exemples d'utilisation:
   
-  # Rapport complet avec configuration par défaut
+  # Rapport complet en PDF (par défaut)
   python cli.py --all
   
-  # Rapport global uniquement
-  python cli.py --global
+  # Rapport complet en HTML
+  python cli.py --all --format html
+  
+  # Rapport complet en PDF et HTML
+  python cli.py --all --format both
+  
+  # Rapport global en HTML uniquement
+  python cli.py --global --format html
+  
+  # Analyse avec illustrations en PDF
+  python cli.py --analyse
+  
+  # Analyse avec illustrations en HTML
+  python cli.py --analyse --format html
   
   # Rapport pour un utilisateur spécifique
-  python cli.py --user user123
+  python cli.py --user-id user123
   
   # Statistiques rapides sans générer de fichiers
   python cli.py --stats
@@ -56,12 +68,16 @@ Exemples d'utilisation:
                       help='Générer un rapport pour un utilisateur spécifique')
     group.add_argument('--text', action='store_true',
                       help='Générer uniquement l\'analyse textuelle')
+    group.add_argument('--analyse', '--analysis', action='store_true',
+                      help='Générer l\'analyse PDF avec illustrations et recommandations')
     group.add_argument('--stats', action='store_true',
                       help='Afficher uniquement les statistiques (pas de fichier)')
     
     # Options de sortie
     parser.add_argument('--output', '-o',
                        help='Nom du fichier de sortie')
+    parser.add_argument('--format', '-f', choices=['pdf', 'html', 'both'], default='pdf',
+                       help='Format de sortie : pdf, html, ou both (défaut: pdf)')
     parser.add_argument('--quiet', '-q', action='store_true',
                        help='Mode silencieux')
     
@@ -153,12 +169,15 @@ Exemples d'utilisation:
         
     elif args.global_report:
         # Rapport global uniquement
-        output = args.output or 'rapport_greenmove_global.pdf'
-        if not args.quiet:
-            print(f"Génération du rapport global: {output}")
-        analytics.generer_rapport_pdf(output)
-        if not args.quiet:
-            print(f"✓ Rapport généré: {output}")
+        formats_list = ['pdf', 'html'] if args.format == 'both' else [args.format]
+        for fmt in formats_list:
+            ext = 'html' if fmt == 'html' else 'pdf'
+            output = args.output or f'rapport_greenmove_global.{ext}'
+            if not args.quiet:
+                print(f"Génération du rapport global ({fmt.upper()}): {output}")
+            analytics.generer_rapport_pdf(output, format=fmt)
+            if not args.quiet:
+                print(f"✓ Rapport généré: {output}")
     
     elif args.text:
         # Analyse textuelle uniquement
@@ -168,6 +187,18 @@ Exemples d'utilisation:
         analytics.generer_analyse_textuelle(output)
         if not args.quiet:
             print(f"✓ Analyse générée: {output}")
+    
+    elif args.analyse:
+        # Analyse PDF/HTML avec illustrations
+        formats_list = ['pdf', 'html'] if args.format == 'both' else [args.format]
+        for fmt in formats_list:
+            ext = 'html' if fmt == 'html' else 'pdf'
+            output = args.output or f'analyse_greenmove.{ext}'
+            if not args.quiet:
+                print(f"Génération de l'analyse avec illustrations ({fmt.upper()}): {output}")
+            analytics.generer_analyse_pdf(output, format=fmt)
+            if not args.quiet:
+                print(f"✓ Analyse générée: {output}")
     
     elif args.user_id:
         # Rapport pour un utilisateur spécifique
@@ -197,12 +228,25 @@ Exemples d'utilisation:
         if not args.quiet:
             print("Génération de tous les rapports...")
         
+        formats_list = ['pdf', 'html'] if args.format == 'both' else [args.format]
+        
         # Rapport global
-        if not args.quiet:
-            print("  • Rapport global PDF...", end=' ')
-        analytics.generer_rapport_pdf()
-        if not args.quiet:
-            print("✓")
+        for fmt in formats_list:
+            ext = 'html' if fmt == 'html' else 'pdf'
+            if not args.quiet:
+                print(f"  • Rapport global {fmt.upper()}...", end=' ')
+            analytics.generer_rapport_pdf(f'rapport_greenmove_global.{ext}', format=fmt)
+            if not args.quiet:
+                print("✓")
+        
+        # Analyse avec illustrations
+        for fmt in formats_list:
+            ext = 'html' if fmt == 'html' else 'pdf'
+            if not args.quiet:
+                print(f"  • Analyse {fmt.upper()} avec illustrations...", end=' ')
+            analytics.generer_analyse_pdf(f'analyse_greenmove.{ext}', format=fmt)
+            if not args.quiet:
+                print("✓")
         
         # Analyse textuelle
         if not args.quiet:

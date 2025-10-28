@@ -9,14 +9,19 @@ from greenmove_reporting import GreenmoveAnalytics
 def exemple_simple():
     """Exemple d'utilisation simple"""
     
-    # Configuration (à adapter)
-    config = {
-        'host': 'votre-serveur.postgres.database.azure.com',
-        'database': 'greenmove',
-        'user': 'votre_utilisateur',
-        'password': 'votre_mot_de_passe',
-        'port': 5432
-    }
+    # Charger la configuration
+    try:
+        from config import DB_CONFIG as config
+        print("✓ Configuration chargée depuis config.py")
+    except ImportError:
+        print("⚠️  Fichier config.py non trouvé. Utilisation manuelle.")
+        config = {
+            'host': input("Hôte PostgreSQL: "),
+            'database': input("Base de données: "),
+            'user': input("Utilisateur: "),
+            'password': input("Mot de passe: "),
+            'port': 5432
+        }
     
     print("Connexion à la base de données...")
     analytics = GreenmoveAnalytics(**config)
@@ -52,13 +57,19 @@ def exemple_simple():
 def exemple_utilisateur_specifique():
     """Exemple pour générer un rapport pour un utilisateur spécifique"""
     
-    config = {
-        'host': 'votre-serveur.postgres.database.azure.com',
-        'database': 'greenmove',
-        'user': 'votre_utilisateur',
-        'password': 'votre_mot_de_passe',
-        'port': 5432
-    }
+    # Charger la configuration
+    try:
+        from config import DB_CONFIG as config
+        print("✓ Configuration chargée depuis config.py")
+    except ImportError:
+        print("⚠️  Fichier config.py non trouvé")
+        config = {
+            'host': input("Hôte PostgreSQL: "),
+            'database': input("Base de données: "),
+            'user': input("Utilisateur: "),
+            'password': input("Mot de passe: "),
+            'port': 5432
+        }
     
     analytics = GreenmoveAnalytics(**config)
     
@@ -76,13 +87,19 @@ def exemple_utilisateur_specifique():
 def exemple_statistiques_rapides():
     """Affiche uniquement des statistiques rapides sans générer de PDF"""
     
-    config = {
-        'host': 'votre-serveur.postgres.database.azure.com',
-        'database': 'greenmove',
-        'user': 'votre_utilisateur',
-        'password': 'votre_mot_de_passe',
-        'port': 5432
-    }
+    # Charger la configuration
+    try:
+        from config import DB_CONFIG as config
+        print("✓ Configuration chargée depuis config.py")
+    except ImportError:
+        print("⚠️  Fichier config.py non trouvé")
+        config = {
+            'host': input("Hôte PostgreSQL: "),
+            'database': input("Base de données: "),
+            'user': input("Utilisateur: "),
+            'password': input("Mot de passe: "),
+            'port': 5432
+        }
     
     analytics = GreenmoveAnalytics(**config)
     

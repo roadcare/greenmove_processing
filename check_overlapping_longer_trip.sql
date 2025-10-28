@@ -70,8 +70,8 @@ BEGIN
                 trip_id,
                 overlapping_trip_record.id,
                 overlapping_trip_record.duration,
-                overlapping_trip_record.startTime,
-                overlapping_trip_record.endTime;
+                overlapping_trip_record."startTime",
+                overlapping_trip_record."endTime";
         END LOOP;
     END IF;
     
