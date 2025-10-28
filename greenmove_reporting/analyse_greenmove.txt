@@ -1,0 +1,157 @@
+================================================================================
+GREENMOVE - RAPPORT D'ANALYSE DES DÉPLACEMENTS
+================================================================================
+
+1. VUE D'ENSEMBLE
+--------------------------------------------------------------------------------
+Période d'analyse : du 01/10/2025 au 27/10/2025
+
+• Nombre d'utilisateurs actifs : 21
+• Nombre total de trajets : 1,908
+• Distance totale parcourue : 64,098.8 km
+• Distance moyenne par trajet : 33.59 km
+• Durée totale : 71,818 minutes (1197 heures)
+• Émissions CO₂ totales : 2,212 g (2.2 kg)
+
+
+2. ANALYSE PAR MODE DE TRANSPORT
+--------------------------------------------------------------------------------
+
+AVION
+  • Nombre de trajets : 2
+  • Distance totale : 1038.9 km
+  • Distance moyenne : 519.47 km
+  • Durée moyenne : 50.5 min
+  • Émissions totales : 208 g
+  • Émissions moyennes : 103.9 g
+  • Intensité carbone : 0.2 g CO₂/km
+
+BUS
+  • Nombre de trajets : 2
+  • Distance totale : 128.9 km
+  • Distance moyenne : 64.44 km
+  • Durée moyenne : 62.3 min
+  • Émissions totales : 14 g
+  • Émissions moyennes : 6.8 g
+  • Intensité carbone : 0.1 g CO₂/km
+
+COVOITURAGE
+  • Nombre de trajets : 142
+  • Distance totale : 2902.9 km
+  • Distance moyenne : 20.44 km
+  • Durée moyenne : 22.5 min
+  • Émissions totales : 66 g
+  • Émissions moyennes : 0.5 g
+  • Intensité carbone : 0.0 g CO₂/km
+
+MARCHE
+  • Nombre de trajets : 386
+  • Distance totale : 510.8 km
+  • Distance moyenne : 1.32 km
+  • Durée moyenne : 21.5 min
+  • Émissions totales : 0 g
+  • Émissions moyennes : 0.0 g
+  • Intensité carbone : 0.0 g CO₂/km
+
+MÉTRO
+  • Nombre de trajets : 1
+  • Distance totale : 9.6 km
+  • Distance moyenne : 9.60 km
+  • Durée moyenne : 26.3 min
+  • Émissions totales : 0 g
+  • Émissions moyennes : 0.0 g
+  • Intensité carbone : 0.0 g CO₂/km
+
+TER / RER
+  • Nombre de trajets : 88
+  • Distance totale : 2903.3 km
+  • Distance moyenne : 32.99 km
+  • Durée moyenne : 32.6 min
+  • Émissions totales : 21 g
+  • Émissions moyennes : 0.2 g
+  • Intensité carbone : 0.0 g CO₂/km
+
+TGV
+  • Nombre de trajets : 94
+  • Distance totale : 23945.6 km
+  • Distance moyenne : 254.74 km
+  • Durée moyenne : 78.6 min
+  • Émissions totales : 50 g
+  • Émissions moyennes : 0.5 g
+  • Intensité carbone : 0.0 g CO₂/km
+
+TRAIN
+  • Nombre de trajets : 66
+  • Distance totale : 3641.8 km
+  • Distance moyenne : 55.18 km
+  • Durée moyenne : 21.1 min
+  • Émissions totales : 32 g
+  • Émissions moyennes : 0.5 g
+  • Intensité carbone : 0.0 g CO₂/km
+
+TRAMWAY
+  • Nombre de trajets : 2
+  • Distance totale : 4.3 km
+  • Distance moyenne : 2.14 km
+  • Durée moyenne : 7.8 min
+  • Émissions totales : 0 g
+  • Émissions moyennes : 0.0 g
+  • Intensité carbone : 0.0 g CO₂/km
+
+VOITURE
+  • Nombre de trajets : 1092
+  • Distance totale : 28914.3 km
+  • Distance moyenne : 26.48 km
+  • Durée moyenne : 43.9 min
+  • Émissions totales : 1821 g
+  • Émissions moyennes : 1.7 g
+  • Intensité carbone : 0.1 g CO₂/km
+
+VÉLO
+  • Nombre de trajets : 33
+  • Distance totale : 98.5 km
+  • Distance moyenne : 2.99 km
+  • Durée moyenne : 15.3 min
+  • Émissions totales : 0 g
+  • Émissions moyennes : 0.0 g
+  • Intensité carbone : 0.0 g CO₂/km
+
+
+3. IMPACT ENVIRONNEMENTAL
+--------------------------------------------------------------------------------
+Les trajets enregistrés ont généré 2.2 kg de CO₂.
+
+Équivalences :
+  • 11 trajets Paris-Lyon en TGV
+  • 0.00 vols aller-retour Paris-New York
+  • 6 kg de viande de bœuf produite
+  • 0 arbres nécessaires pour compenser (sur 1 an)
+
+Modes les plus écologiques (g CO₂/km) :
+  1. Vélo : 0.0 g CO₂/km
+  2. Marche : 0.0 g CO₂/km
+  3. TGV : 0.0 g CO₂/km
+  4. Tramway : 0.0 g CO₂/km
+  5. Métro : 0.0 g CO₂/km
+  6. TER / RER : 0.0 g CO₂/km
+  7. Train : 0.0 g CO₂/km
+  8. Covoiturage : 0.0 g CO₂/km
+  9. Voiture : 0.1 g CO₂/km
+  10. Bus : 0.1 g CO₂/km
+  11. Avion : 0.2 g CO₂/km
+
+
+4. RECOMMANDATIONS
+--------------------------------------------------------------------------------
+• Le mode 'Voiture' représente 82.3% des émissions totales.
+  → Privilégier les alternatives moins polluantes pour ce type de trajet.
+
+• Pour réduire l'empreinte carbone :
+  - Privilégier les transports en commun pour les trajets urbains
+  - Utiliser le vélo pour les trajets de moins de 5 km
+  - Covoiturer pour les trajets en voiture
+  - Regrouper les déplacements pour optimiser les trajets
+
+================================================================================
+Rapport généré le 27/10/2025 à 16:18:45
+================================================================================
